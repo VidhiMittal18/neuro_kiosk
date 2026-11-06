@@ -1,0 +1,68 @@
+{
+  "config": {
+    "dataset": "PneumoniaMNIST",
+    "num_steps": 15,
+    "beta": 0.9,
+    "surrogate": "fast_sigmoid(slope=25.0)",
+    "test_samples": 624,
+    "latency_iterations": 100,
+    "latency_device": "cpu"
+  },
+  "cnn": {
+    "quality": {
+      "accuracy_pct": 86.21794871794873,
+      "precision_macro": 0.9044380017841214,
+      "recall_macro": 0.8179487179487179,
+      "f1_macro": 0.8387170455501725
+    },
+    "latency_ms_per_image": {
+      "mean": 0.408591998857446,
+      "std": 0.18232230636011176
+    },
+    "footprint": {
+      "trainable_params": 8034,
+      "memory_mb": 0.03102874755859375
+    },
+    "compute": {
+      "macs": 1019200,
+      "flops": 2038400
+    }
+  },
+  "snn": {
+    "quality": {
+      "accuracy_pct": 86.0576923076923,
+      "precision_macro": 0.8897768255193431,
+      "recall_macro": 0.8209401709401709,
+      "f1_macro": 0.8393118778618724
+    },
+    "latency_ms_per_image": {
+      "mean": 23.999089997960255,
+      "std": 5.780265497208754
+    },
+    "footprint": {
+      "trainable_params": 10970,
+      "memory_mb": 0.050457000732421875
+    },
+    "compute": {
+      "sops_per_inference": 1703640.375,
+      "sops_by_layer_per_inference": {
+        "lif1": 1697752.8205128205,
+        "lif2": 5887.554487179487,
+        "lif3": 0.0
+      },
+      "encoding_macs_conv1": 172800,
+      "dense_equivalent_synaptic_ops": 9231360,
+      "sops_to_dense_ratio": 0.18454922947431365,
+      "sops_to_cnn_macs_ratio": 1.671546678767661
+    },
+    "sparsity": {
+      "mean_spike_rate_per_neuron_per_step": 0.2307283446556417,
+      "per_layer_spike_rate": {
+        "lif1": 0.18522704227999368,
+        "lif2": 0.38330432859241453,
+        "lif3": 0.4844017094017094
+      },
+      "spikes_per_inference": 7759.3942307692305
+    }
+  }
+}
