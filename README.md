@@ -231,5 +231,12 @@ pixel values).
   4. Reddy Eswar Anush - 23UCS173
 * Mentor: Dr. Ashim Saha, Department of CSE, NIT Agartala
 
+## 11. Acknowledgements
+
 [PneumoniaMNIST / MedMNIST](https://medmnist.com/), [snnTorch](https://snntorch.readthedocs.io/),
 [PyTorch](https://pytorch.org/), [FastAPI](https://fastapi.tiangolo.com/).
+
+## 12. License
+
+Code is released under the [MIT License](LICENSE). The PneumoniaMNIST dataset has its own license and citation
+requirements; see the [MedMNIST page](https://medmnist.com/).
