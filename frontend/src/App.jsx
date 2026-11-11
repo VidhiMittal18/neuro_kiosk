@@ -1,14 +1,19 @@
-import { useEffect, useRef, useState } from "react";
-import { Activity, BarChart3, ShieldCheck, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Activity, BarChart3, List, ScanLine, ShieldCheck, X } from "lucide-react";
+import { addRecord, getAllRecords, updateRecord } from "./db.js";
 import { diagnose, getSampleFile, getStatus } from "./api.js";
+import { flushPending, isOnline, registerBackgroundSync, setupOnlineSync } from "./sync.js";
 import BenchmarkTab from "./components/BenchmarkTab.jsx";
+import CameraPanel from "./components/CameraPanel.jsx";
 import Disclaimer from "./components/Disclaimer.jsx";
 import Header from "./components/Header.jsx";
+import ReviewQueue from "./components/ReviewQueue.jsx";
 import ResultCard from "./components/ResultCard.jsx";
 import UploadPanel from "./components/UploadPanel.jsx";
 
 const TABS = [
   { id: "diagnose", label: "Diagnose", icon: Activity },
+  { id: "review", label: "Review queue", icon: List },
   { id: "benchmarks", label: "Benchmarks", icon: BarChart3 },
 ];
 
@@ -25,11 +30,26 @@ export default function App() {
   const [status, setStatus] = useState(null);
   const [simulateOffline, setSimulateOffline] = useState(false);
   const [file, setFile] = useState(null);
+  const [inputMode, setInputMode] = useState("camera");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [records, setRecords] = useState([]);
+  const [recordsLoading, setRecordsLoading] = useState(false);
   const [acknowledged, setAcknowledged] = useState(readAcknowledgement);
   const acknowledgementRef = useRef(null);
+
+  const loadRecords = useCallback(async () => {
+    setRecordsLoading(true);
+    try {
+      const rows = await getAllRecords();
+      setRecords(rows);
+    } catch (loadError) {
+      setError(loadError.message || "Unable to load the review queue.");
+    } finally {
+      setRecordsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -62,19 +82,85 @@ export default function App() {
     return () => window.removeEventListener("keydown", keepFocusInDialog);
   }, [acknowledged]);
 
-  async function handleAnalyze() {
+  useEffect(() => {
+    if (activeTab === "review") {
+      loadRecords();
+    }
+  }, [activeTab, loadRecords]);
+
+  useEffect(() => {
+    let active = true;
+    let unsub;
+    (async () => {
+      try {
+        unsub = await setupOnlineSync(async (result) => {
+          if (result.failed > 0) {
+            setError(result.error || `Unable to sync ${result.failed} pending record${result.failed === 1 ? "" : "s"}.`);
+          }
+          await loadRecords();
+        });
+        if (!active) {
+          unsub();
+          return;
+        }
+        if (isOnline()) {
+          const result = await flushPending();
+          if (active) {
+            if (result.failed > 0) {
+              setError(result.error || `Unable to sync ${result.failed} pending record${result.failed === 1 ? "" : "s"}.`);
+            }
+            await loadRecords();
+          }
+        }
+      } catch (syncError) {
+        if (active) setError(syncError.message || "Unable to sync pending records.");
+      }
+    })();
+    return () => {
+      active = false;
+      unsub?.();
+    };
+  }, [setupOnlineSync, flushPending, isOnline, loadRecords]);
+
+  const handleAnalyze = useCallback(async () => {
     if (!file || loading) return;
     setLoading(true);
     setError("");
     setResult(null);
+    let recordId;
     try {
-      setResult(await diagnose(file, simulateOffline));
+      recordId = await addRecord({
+        image: file,
+        status: "pending",
+        mode: simulateOffline ? "offline" : "online",
+      });
+      const response = await diagnose(file, simulateOffline);
+      setResult(response);
+      if (response.mode === "online") {
+        await updateRecord(recordId, {
+          status: "synced",
+          result: response,
+          mode: response.mode,
+          offlineReason: response.offline_reason ?? null,
+          syncedAt: Date.now(),
+        });
+      } else {
+        await updateRecord(recordId, {
+          status: "pending",
+          result: response,
+          mode: response.mode,
+          offlineReason: response.offline_reason ?? null,
+        });
+        if (!simulateOffline) await registerBackgroundSync();
+      }
+      await loadRecords();
     } catch (requestError) {
       setError(requestError.message || "Unable to analyze this image.");
+      if (recordId && !simulateOffline) await registerBackgroundSync();
     } finally {
       setLoading(false);
     }
-  }
+  }, [file, loading, loadRecords, simulateOffline]);
 
   async function handleSample(filename) {
     setError("");
@@ -140,17 +226,56 @@ export default function App() {
         {activeTab === "diagnose" ? (
           <section id="panel-diagnose" role="tabpanel" aria-labelledby="tab-diagnose" className="diagnose-grid">
             <div className="diagnose-main">
-              <UploadPanel
-                file={file}
-                loading={loading}
-                onFileChange={(nextFile) => {
-                  setFile(nextFile);
-                  setResult(null);
-                  setError("");
-                }}
-                onAnalyze={handleAnalyze}
-                onSample={handleSample}
-              />
+              <div className="input-mode">
+                <button
+                  type="button"
+                  className={`mode-toggle ${inputMode === "camera" ? "is-active" : ""}`}
+                  onClick={() => setInputMode("camera")}
+                  aria-pressed={inputMode === "camera"}
+                >
+                  Camera
+                </button>
+                <button
+                  type="button"
+                  className={`mode-toggle ${inputMode === "upload" ? "is-active" : ""}`}
+                  onClick={() => setInputMode("upload")}
+                  aria-pressed={inputMode === "upload"}
+                >
+                  Upload
+                </button>
+              </div>
+              {inputMode === "camera" ? (
+                <CameraPanel
+                  onFileReady={(nextFile) => {
+                    setFile(nextFile);
+                    setResult(null);
+                    setError("");
+                  }}
+                  loading={loading}
+                />
+              ) : (
+                <UploadPanel
+                  file={file}
+                  loading={loading}
+                  onFileChange={(nextFile) => {
+                    setFile(nextFile);
+                    setResult(null);
+                    setError("");
+                  }}
+                  onAnalyze={handleAnalyze}
+                  onSample={handleSample}
+                />
+              )}
+              {inputMode === "camera" && file && !result && (
+                <button
+                  className="button button-primary"
+                  type="button"
+                  disabled={loading}
+                  onClick={handleAnalyze}
+                >
+                  <ScanLine size={16} strokeWidth={1.6} /> Analyze image
+                </button>
+              )}
               {result && <ResultCard response={result} />}
             </div>
             <aside className="workflow-aside" aria-label="Study context">
@@ -162,6 +287,15 @@ export default function App() {
               <div className="scope-row"><span>Inference route</span><strong>{simulateOffline ? "On-device SNN" : "Cloud → edge fallback"}</strong></div>
               <div className="aside-foot"><span className="pulse-dot" /> {status?.snn_loaded ? "Edge model ready" : "Edge model status pending"}</div>
             </aside>
+          </section>
+        ) : activeTab === "review" ? (
+          <section id="panel-review" role="tabpanel" aria-labelledby="tab-review">
+            <ReviewQueue
+              records={records}
+              loading={recordsLoading}
+              onRecordsChange={loadRecords}
+              onError={setError}
+            />
           </section>
         ) : (
           <section id="panel-benchmarks" role="tabpanel" aria-labelledby="tab-benchmarks">

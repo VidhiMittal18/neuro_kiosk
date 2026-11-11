@@ -49,6 +49,8 @@ npm run dev
 
 Open the Vite URL printed in Terminal 3, normally `http://127.0.0.1:5173`. Vite proxies `/api/*` to the edge service and strips the `/api` prefix. The browser never calls the cloud API directly.
 
+The frontend supports browser-camera capture and PNG/JPEG upload. Captures and diagnosis results are kept in the browser's IndexedDB review queue. Records remain pending until the edge API reports an online/cloud result; retries use Background Sync where supported and the browser's online event while the app is open otherwise.
+
 ## Production Build
 
 Build the static frontend, then run only the edge service to serve both the UI and API on the same origin:
