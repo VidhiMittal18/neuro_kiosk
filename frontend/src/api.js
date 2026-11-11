@@ -29,11 +29,15 @@ export async function getStatus() {
   return (await request("/status")).json();
 }
 
-export async function diagnose(file, simulateOffline) {
+export async function sendImageForDiagnosis(file, simulateOffline) {
   const form = new FormData();
   form.append("file", file);
   form.append("simulate_offline", String(simulateOffline));
   return (await request("/diagnose", { method: "POST", body: form })).json();
+}
+
+export async function diagnose(file, simulateOffline) {
+  return sendImageForDiagnosis(file, simulateOffline);
 }
 
 export async function getBenchmarks() {
