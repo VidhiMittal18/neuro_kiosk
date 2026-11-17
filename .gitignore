@@ -1,7 +1,7 @@
 venv/
 .venv/
+.venv311/
 __pycache__/
-data/
 *.pyc
 .pytest_cache/
 frontend/node_modules/

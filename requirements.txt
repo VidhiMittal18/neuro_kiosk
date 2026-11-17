@@ -1,13 +1,8 @@
-torch
-torchvision
-snntorch
-medmnist
+torch==2.6.0
+torchvision==0.21.0
+spikingjelly==2.0.0
 numpy
-pandas
-scikit-learn
-matplotlib
-seaborn
-pillow
+Pillow>=10.0
 fastapi
 uvicorn
 requests

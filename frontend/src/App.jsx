@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Activity, BarChart3, List, ScanLine, ShieldCheck, X } from "lucide-react";
+import { Activity, List, ScanLine, ShieldCheck, X } from "lucide-react";
 import { addRecord, getAllRecords, updateRecord } from "./db.js";
 import { diagnose, getSampleFile, getStatus } from "./api.js";
 import { flushPending, isOnline, registerBackgroundSync, setupOnlineSync } from "./sync.js";
-import BenchmarkTab from "./components/BenchmarkTab.jsx";
 import CameraPanel from "./components/CameraPanel.jsx";
 import Disclaimer from "./components/Disclaimer.jsx";
 import Header from "./components/Header.jsx";
@@ -14,7 +13,6 @@ import UploadPanel from "./components/UploadPanel.jsx";
 const TABS = [
   { id: "diagnose", label: "Diagnose", icon: Activity },
   { id: "review", label: "Review queue", icon: List },
-  { id: "benchmarks", label: "Benchmarks", icon: BarChart3 },
 ];
 
 function readAcknowledgement() {
@@ -198,7 +196,7 @@ export default function App() {
       <main className="workspace">
         <div className="workspace-heading">
           <div>
-            <p className="eyebrow">PNEUMONIA MNIST · EDGE INFERENCE STUDY</p>
+            <p className="eyebrow">DENSENET121 · EDGE INFERENCE STUDY</p>
             <h1>Research console</h1>
           </div>
           <div className="local-indicator"><ShieldCheck size={16} /> Local-first processing</div>
@@ -281,14 +279,14 @@ export default function App() {
             <aside className="workflow-aside" aria-label="Study context">
               <div className="aside-index">01 <span>MODEL SCOPE</span></div>
               <h2>One image.<br />Two classes.</h2>
-              <p>Model output is limited to Normal or Pneumonia using the PneumoniaMNIST research dataset.</p>
+              <p>Research model for two classes, trained for pediatric AP chest X-rays.</p>
               <div className="aside-divider" />
-              <div className="scope-row"><span>Input pipeline</span><strong>Gray · 28 × 28</strong></div>
-              <div className="scope-row"><span>Inference route</span><strong>{simulateOffline ? "On-device SNN" : "Cloud → edge fallback"}</strong></div>
+              <div className="scope-row"><span>Input pipeline</span><strong>Gray · 224 × 224</strong></div>
+              <div className="scope-row"><span>Inference route</span><strong>{simulateOffline ? "On-device SNN" : "Cloud ANN → SNN fallback"}</strong></div>
               <div className="aside-foot"><span className="pulse-dot" /> {status?.snn_loaded ? "Edge model ready" : "Edge model status pending"}</div>
             </aside>
           </section>
-        ) : activeTab === "review" ? (
+        ) : (
           <section id="panel-review" role="tabpanel" aria-labelledby="tab-review">
             <ReviewQueue
               records={records}
@@ -296,10 +294,6 @@ export default function App() {
               onRecordsChange={loadRecords}
               onError={setError}
             />
-          </section>
-        ) : (
-          <section id="panel-benchmarks" role="tabpanel" aria-labelledby="tab-benchmarks">
-            <BenchmarkTab />
           </section>
         )}
       </main>

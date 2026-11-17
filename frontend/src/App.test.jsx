@@ -1,14 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App.jsx";
-import { diagnose, getBenchmarks, getSampleFile, getStatus } from "./api.js";
+import { diagnose, getSampleFile, getStatus } from "./api.js";
 import { addRecord, getAllRecords, updateRecord } from "./db.js";
 import { registerBackgroundSync } from "./sync.js";
 
 vi.mock("./api.js", () => ({
   apiUrl: vi.fn((path) => path),
   diagnose: vi.fn(),
-  getBenchmarks: vi.fn(),
   getSampleFile: vi.fn(),
   getStatus: vi.fn(),
 }));
@@ -49,34 +48,16 @@ vi.mock("./components/ReviewQueue.jsx", () => ({
   },
 }));
 
-const benchmarkFixture = {
-  config: { dataset: "PneumoniaMNIST", test_samples: 624, latency_iterations: 100 },
-  cnn: {
-    quality: { accuracy_pct: 86.2, f1_macro: 0.838, precision_macro: 0.904, recall_macro: 0.818 },
-    latency_ms_per_image: { mean: 0.4, std: 0.18 },
-    footprint: { trainable_params: 8034, memory_mb: 0.031 },
-    compute: { macs: 1019200 },
-  },
-  snn: {
-    quality: { accuracy_pct: 86.1, f1_macro: 0.839, precision_macro: 0.89, recall_macro: 0.821 },
-    latency_ms_per_image: { mean: 24, std: 5.7 },
-    footprint: { trainable_params: 10970, memory_mb: 0.05 },
-    compute: { sops_per_inference: 1703640, dense_equivalent_synaptic_ops: 9231360, sops_to_dense_ratio: 0.1845 },
-    sparsity: { mean_spike_rate_per_neuron_per_step: 0.23 },
-  },
-};
-
 describe("Neuro Kiosk", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.clear();
     getAllRecords.mockResolvedValue([]);
     getStatus.mockResolvedValue({ cloud_reachable: true, snn_loaded: true });
-    getBenchmarks.mockResolvedValue(benchmarkFixture);
     diagnose.mockResolvedValue({
       mode: "online",
       offline_reason: null,
-      result: { prediction: "Normal", confidence: 0.91, latency_ms: 4.2, source: "Cloud-API" },
+      result: { prediction: "Normal", confidence: 0.91, latency_ms: 4.2, source: "Cloud-DenseNet121-ANN" },
     });
   });
 
@@ -187,13 +168,4 @@ describe("Neuro Kiosk", () => {
     expect(screen.getByTestId("review-row")).toHaveAttribute("data-status", "pending");
   });
 
-  it("loads the benchmark comparison when its tab is opened", async () => {
-    window.localStorage.setItem("neuro-kiosk-acknowledged", "true");
-    render(<App />);
-    fireEvent.click(screen.getByRole("tab", { name: "Benchmarks" }));
-
-    expect(await screen.findByRole("heading", { name: "Model benchmarks" })).toBeInTheDocument();
-    expect(await screen.findByRole("table", { name: "CNN and SNN benchmark comparison" })).toBeInTheDocument();
-    expect(screen.getByText(/SNN is slower than the CNN/)).toBeInTheDocument();
-  });
 });
