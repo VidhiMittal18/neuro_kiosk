@@ -29,7 +29,7 @@ export default function ResultCard({ response }) {
         </div>
       </div>
 
-      <div className="result-source"><span>Source</span><strong>{result.source}</strong></div>
+      <div className="result-source"><span>Source</span><strong>{result.source}{result.time_steps ? ` · ${result.time_steps} time steps` : ""}</strong></div>
       {offlineReason && <p className="offline-reason"><Cpu size={14} /> {offlineReason}</p>}
       {result.snn && <SnnDetails snn={result.snn} />}
       <p className="result-caveat">Research model output only · Not a clinical assessment</p>

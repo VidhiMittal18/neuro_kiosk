@@ -40,10 +40,6 @@ export async function diagnose(file, simulateOffline) {
   return sendImageForDiagnosis(file, simulateOffline);
 }
 
-export async function getBenchmarks() {
-  return (await request("/benchmarks")).json();
-}
-
 export async function getSampleFile(filename) {
   const response = await request(`/samples/${encodeURIComponent(filename)}`);
   const blob = await response.blob();

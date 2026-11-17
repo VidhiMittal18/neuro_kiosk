@@ -1,0 +1,56 @@
+{
+  "project": "DenseNet121 Pneumonia ANN-to-SNN Conversion",
+  "source_repo": "luanacarolina/pneumonia-chest-xray-classifier",
+  "source_checkpoint": "checkpoints/binary/densenet121.pt",
+  "conversion_method": "None",
+  "conversion_note": "Converted from a pretrained ANN using SpikingJelly FXConverter; this is not a natively trained SNN.",
+  "models": {
+    "ann_weights": "densenet121_pneumonia_ann_state_dict.pt",
+    "snn_full_fx_graphmodule": "densenet121_pneumonia_snn.pt",
+    "recommended_default": "ann",
+    "best_converted_snn": {
+      "model": "snn",
+      "timesteps": 16
+    }
+  },
+  "thresholds_selected_on_validation": {
+    "ann": 0.9981153011322021,
+    "snn": {
+      "4": 0.9908550977706909,
+      "8": 0.9987940788269043,
+      "16": 0.9999173879623413
+    }
+  },
+  "class_to_index": {
+    "NORMAL": 0,
+    "PNEUMONIA": 1
+  },
+  "preprocessing": {
+    "resize": [
+      224,
+      224
+    ],
+    "convert_to_rgb_then_grayscale": true,
+    "grayscale_output_channels": 3,
+    "to_tensor": true,
+    "normalize_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "normalize_std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "runtime": {
+    "python_tested": "3.11.9",
+    "torch": "2.6.0+cpu",
+    "torchvision": "0.21.0+cpu",
+    "device_used_for_evaluation": "CPU",
+    "spikingjelly": "2.0.0"
+  },
+  "source_model_scope": "Model card describes pediatric AP chest X-rays.",
+  "warning": "Research/educational use only. Not validated for clinical diagnosis or treatment. Do not use to make medical decisions."
+}

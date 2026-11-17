@@ -8,9 +8,8 @@ edge_app.py - local diagnostic kiosk client.
 Routing logic
   1. ONLINE : POST the image to the cloud API (2 s timeout) and print its "second opinion".
   2. OFFLINE: any requests.exceptions.RequestException (timeout, connection refused, DNS, HTTP
-              error, ...) is caught -> alert -> load trained_snn.pt -> on-device CPU inference
-              with the low-power SNN -> print local diagnostic metrics. The kiosk never crashes
-              because of the network.
+              error, ...) is caught -> alert -> load the bundled DenseNet121 SNN -> run local
+              CPU inference. The kiosk never crashes because of the network.
 """
 import argparse
 import json
@@ -20,10 +19,9 @@ import time
 from pathlib import Path
 
 import requests
-import torch
 from PIL import Image
 
-import common as C
+import local_snn as LocalSNN
 
 CLOUD_URL = "http://localhost:8000/predict"
 TIMEOUT_S = 2
@@ -37,38 +35,14 @@ def query_cloud(image_bytes: bytes, filename: str, url: str, timeout: float) -> 
 
 
 def local_snn_diagnosis(image_path: Path) -> dict:
-    """On-device CPU inference with the SNN (same preprocessing + decision rule as everywhere)."""
+    """Run the bundled DenseNet121 SNN on-device using the package preprocessing."""
     t_load = time.perf_counter()
-    model = C.load_trained("snn", C.SNN_PATH, device="cpu")
+    model = LocalSNN.load_model()
     load_ms = (time.perf_counter() - t_load) * 1e3
 
-    t0 = time.perf_counter()
-    x = C.preprocess_pil(Image.open(image_path))
-    with torch.no_grad():
-        spk_out, mem_out, act = model.forward_record(x, record=True)
-        probs = torch.softmax(C.snn_scores(spk_out, mem_out), dim=1)[0]
-    latency_ms = (time.perf_counter() - t0) * 1e3
-
-    idx = int(probs.argmax())
-    acc = C.new_activity_acc()
-    C.accumulate_activity(model, act, acc)
-    stats = C.summarize_activity(acc)
-    _, dense_ops = C.snn_static_ops(model)
-    return {
-        "status": "success",
-        "source": "Edge-SNN (local CPU)",
-        "prediction": C.CLASS_NAMES[idx],
-        "confidence": float(probs[idx]),
-        "latency_ms": latency_ms,
-        "model_load_ms": load_ms,
-        "time_steps": model.num_steps,
-        "output_spike_counts": {C.CLASS_NAMES[i]: int(spk_out[:, 0, i].sum()) for i in range(C.NUM_CLASSES)},
-        "spikes_this_inference": stats["spikes_per_inference"],
-        "mean_spike_rate_per_neuron_per_step": stats["mean_spike_rate_per_neuron_per_step"],
-        "per_layer_spike_rate": stats["per_layer_spike_rate"],
-        "sops_this_inference": stats["sops_per_inference"],
-        "dense_equivalent_ops": dense_ops,
-    }
+    with Image.open(image_path) as image:
+        result = LocalSNN.predict(model, image)
+    return {"status": "success", **result, "model_load_ms": load_ms}
 
 
 def main() -> int:
