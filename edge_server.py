@@ -13,7 +13,9 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
+from starlette.concurrency import run_in_threadpool
 
+from explainability.xai_service import DenseNetSNNXAI
 import local_snn as LocalSNN
 import team_model as Model
 
@@ -44,7 +46,11 @@ class DiagnoseBodyLimitMiddleware:
         self.app = app
 
     async def __call__(self, scope: dict, receive: Any, send: Any) -> None:
-        if scope["type"] != "http" or scope["method"] != "POST" or scope["path"] != "/diagnose":
+        if (
+            scope["type"] != "http"
+            or scope["method"] != "POST"
+            or scope["path"] not in {"/diagnose", "/explain"}
+        ):
             await self.app(scope, receive, send)
             return
 
@@ -158,13 +164,30 @@ def _offline_reason(error: Exception) -> str:
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    # Existing Neuro Kiosk SNN remains the offline prediction fallback.
     application.state.snn_model = LocalSNN.load_model()
-    yield
-    application.state.snn_model = None
+
+    # Separate DenseNet121 SpikingJelly SNN used only for XAI explanations.
+    # This keeps XAI state resets and hooks independent of the existing fallback.
+    application.state.xai_service = DenseNetSNNXAI(
+        model_path=ROOT / "models" / "densenet121_pneumonia_snn.pt",
+        metadata_path=ROOT / "models" / "metadata.json",
+        device="cpu",
+    )
+
+    print("Neuro Kiosk local fallback SNN loaded.")
+    print("DenseNet121 SNN explainability service loaded.")
+
+    try:
+        yield
+    finally:
+        application.state.snn_model = None
+        application.state.xai_service = None
 
 
 app = FastAPI(title="Neuro Kiosk Edge API", lifespan=lifespan)
 app.state.snn_model = None
+app.state.xai_service = None
 app.add_middleware(DiagnoseBodyLimitMiddleware)
 
 
@@ -201,6 +224,77 @@ async def diagnose(file: UploadFile = File(...), simulate_offline: bool = Form(F
     except (requests.exceptions.RequestException, ValueError, TypeError) as error:
         result = _local_snn_result(image, app.state.snn_model)
         return {"mode": "offline", "offline_reason": _offline_reason(error), "result": result}
+
+
+@app.post("/explain")
+async def explain_prediction(
+    file: UploadFile = File(...),
+    method: str = Form("grad2d"),
+    timesteps: int = Form(16),
+    target_class: str = Form("predicted"),
+    ig_steps: int = Form(50),
+) -> dict:
+    """Generate an XAI visualisation using the DenseNet121 SpikingJelly SNN."""
+    # Reuse the existing upload validation and grayscale image decoding.
+    _, image = await _read_upload(file)
+
+    service: DenseNetSNNXAI | None = app.state.xai_service
+    if service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="DenseNet121 SNN explainability service is not loaded.",
+        )
+
+    normalized_target = target_class.strip().lower()
+    if normalized_target in {"", "predicted", "auto"}:
+        selected_target = None
+    elif normalized_target in {"normal", "0"}:
+        selected_target = 0
+    elif normalized_target in {"pneumonia", "1"}:
+        selected_target = 1
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail="target_class must be 'predicted', 'NORMAL', or 'PNEUMONIA'.",
+        )
+
+    try:
+        # CPU-bound Torch/XAI work runs outside the async event loop.
+        result = await run_in_threadpool(
+            service.explain,
+            image,
+            method=method,
+            timesteps=timesteps,
+            target_class=selected_target,
+            ig_steps=ig_steps,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except Exception as error:
+        # Keep internal traceback/details in server logs, not in the API response.
+        print(f"XAI generation failed: {type(error).__name__}: {error}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to generate the requested explanation.",
+        ) from error
+
+    return {
+        "status": "success",
+        "source": "DenseNet121-SpikingJelly-SNN",
+        **result,
+    }
+
+
+@app.get("/xai/health")
+def xai_health() -> dict:
+    """Report whether the DenseNet121 SNN XAI service is loaded."""
+    service: DenseNetSNNXAI | None = app.state.xai_service
+    if service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="DenseNet121 SNN explainability service is not loaded.",
+        )
+    return service.health()
 
 
 @app.get("/samples/{sample_name}")

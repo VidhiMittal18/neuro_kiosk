@@ -1,0 +1,32 @@
+[
+    {
+        "Method": "SNN-Grad2D",
+        "Pneumonia_Sample_AUC": -1.3919482231140137,
+        "Normal_Sample_AUC": -1.317138910293579
+    },
+    {
+        "Method": "SNN-IG2D",
+        "Pneumonia_Sample_AUC": -0.8774899840354919,
+        "Normal_Sample_AUC": -0.6340295076370239
+    },
+    {
+        "Method": "SAM",
+        "Pneumonia_Sample_AUC": 3.4192447662353516,
+        "Normal_Sample_AUC": 3.8284852504730225
+    },
+    {
+        "Method": "Inverted SAM",
+        "Pneumonia_Sample_AUC": 2.8282644748687744,
+        "Normal_Sample_AUC": 2.9633398056030273
+    },
+    {
+        "Method": "SNN-CAM",
+        "Pneumonia_Sample_AUC": 3.070368766784668,
+        "Normal_Sample_AUC": 3.0904767513275146
+    },
+    {
+        "Method": "Random",
+        "Pneumonia_Sample_AUC": 0.6073369979858398,
+        "Normal_Sample_AUC": 0.9461238980293274
+    }
+]
