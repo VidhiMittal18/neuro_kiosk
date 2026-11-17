@@ -1,0 +1,25 @@
+{
+    "model": "DenseNet121 SpikingJelly SNN",
+    "timesteps": 16,
+    "threshold": 0.9999173879623413,
+    "sam_gamma": 0.5,
+    "sam_trail": 5,
+    "sam_include_current": true,
+    "integrated_gradients_steps": 50,
+    "target_classes": {
+        "normal": 0,
+        "pneumonia": 1
+    },
+    "methods": [
+        "SNN-Grad2D",
+        "SNN-Grad3D",
+        "SNN-IG2D",
+        "SNN-IG3D",
+        "SAM",
+        "Inverted SAM",
+        "SNN-CAM",
+        "Pixel Deletion"
+    ],
+    "sample_scope": 2,
+    "clinical_validation": false
+}

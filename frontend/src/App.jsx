@@ -8,6 +8,7 @@ import Disclaimer from "./components/Disclaimer.jsx";
 import Header from "./components/Header.jsx";
 import ReviewQueue from "./components/ReviewQueue.jsx";
 import ResultCard from "./components/ResultCard.jsx";
+import ExplainPanel from "./components/ExplainPanel.jsx";
 import UploadPanel from "./components/UploadPanel.jsx";
 
 const TABS = [
@@ -275,6 +276,9 @@ export default function App() {
                 </button>
               )}
               {result && <ResultCard response={result} />}
+              {result && file && (
+                <ExplainPanel file={file} />
+              )}
             </div>
             <aside className="workflow-aside" aria-label="Study context">
               <div className="aside-index">01 <span>MODEL SCOPE</span></div>

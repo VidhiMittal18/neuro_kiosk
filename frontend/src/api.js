@@ -45,3 +45,32 @@ export async function getSampleFile(filename) {
   const blob = await response.blob();
   return new File([blob], filename, { type: "image/png" });
 }
+
+// ============================================================
+// DENSENET121 SNN EXPLAINABILITY API
+// ============================================================
+
+export async function explainImage(
+  file,
+  {
+    method = "grad2d",
+    timesteps = 16,
+    targetClass = "predicted",
+    igSteps = 50
+  } = {}
+) {
+  const form = new FormData();
+
+  form.append("file", file);
+  form.append("method", method);
+  form.append("timesteps", String(timesteps));
+  form.append("target_class", targetClass);
+  form.append("ig_steps", String(igSteps));
+
+  const response = await request("/explain", {
+    method: "POST",
+    body: form
+  });
+
+  return response.json();
+}
