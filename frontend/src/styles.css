@@ -44,8 +44,11 @@ a { color: inherit; text-decoration: none; }
   background: #fbfcfa;
   border-bottom: 1px solid #dfe4df;
 }
-.brand { display: inline-flex; align-items: center; gap: 11px; min-width: 180px; }
-.brand-mark { width: 37px; height: 37px; display: grid; place-items: center; color: #fff; background: #176f67; border-radius: 4px; }
+.brand { display: inline-flex; align-items: center; gap: 9px; min-width: 180px; }
+.brand-logos { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.brand-logo { display: block; object-fit: contain; }
+.brand-logo-neuro { width: 44px; height: 43px; }
+.brand-logo-institute { width: 37px; height: 43px; }
 .brand-wordmark { font-size: 15px; font-weight: 700; line-height: 1; letter-spacing: 0; }
 .brand-wordmark span { margin-left: 4px; color: #75817d; font-weight: 500; }
 .topbar-right { display: flex; align-items: center; gap: clamp(18px, 3vw, 44px); }
@@ -201,8 +204,10 @@ h1, h2, h3, p { margin-top: 0; }
 
 @media (max-width: 650px) {
   .topbar { height: auto; min-height: 70px; padding: 13px 17px; align-items: flex-start; }
-  .brand { min-width: 0; padding-top: 4px; }
-  .brand-mark { width: 34px; height: 34px; }
+  .brand { min-width: 0; gap: 6px; padding-top: 4px; }
+  .brand-logos { gap: 3px; }
+  .brand-logo-neuro { width: 35px; height: 35px; }
+  .brand-logo-institute { width: 30px; height: 35px; }
   .brand-wordmark { font-size: 13px; }
   .topbar-right { align-items: flex-end; flex-direction: column-reverse; gap: 8px; }
   .service-state { font-size: 10px; }

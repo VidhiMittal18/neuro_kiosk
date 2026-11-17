@@ -61,6 +61,19 @@ describe("Neuro Kiosk", () => {
     });
   });
 
+  it("shows both Neuro Kiosk and NIT Agartala logos in the header", () => {
+    render(<App />);
+
+    expect(screen.getByRole("img", { name: "Neuro Kiosk logo" })).toHaveAttribute(
+      "src",
+      "/neuro-kiosk-logo.png"
+    );
+    expect(screen.getByRole("img", { name: "NIT Agartala emblem" })).toHaveAttribute(
+      "src",
+      "/nit-agartala-logo.png"
+    );
+  });
+
   it("requires acknowledgement and keeps the disclaimer visible afterward", () => {
     render(<App />);
 
