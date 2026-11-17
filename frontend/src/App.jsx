@@ -4,7 +4,6 @@ import { addRecord, getAllRecords, updateRecord } from "./db.js";
 import { diagnose, getSampleFile, getStatus } from "./api.js";
 import { flushPending, isOnline, registerBackgroundSync, setupOnlineSync } from "./sync.js";
 import CameraPanel from "./components/CameraPanel.jsx";
-import Disclaimer from "./components/Disclaimer.jsx";
 import Header from "./components/Header.jsx";
 import ReviewQueue from "./components/ReviewQueue.jsx";
 import ResultCard from "./components/ResultCard.jsx";
@@ -187,7 +186,6 @@ export default function App() {
         simulateOffline={simulateOffline}
         onSimulateOfflineChange={setSimulateOffline}
       />
-      <Disclaimer />
       {error && (
         <div className="toast toast-error" role="alert">
           <span>{error}</span>
