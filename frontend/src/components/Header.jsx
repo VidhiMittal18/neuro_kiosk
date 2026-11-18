@@ -1,4 +1,4 @@
-import { Activity, Cloud, Cpu, WifiOff } from "lucide-react";
+import { Cloud, Cpu, WifiOff } from "lucide-react";
 
 export default function Header({ status, simulateOffline, onSimulateOfflineChange }) {
   const cloudConnected = Boolean(status?.cloud_reachable);
@@ -13,8 +13,11 @@ export default function Header({ status, simulateOffline, onSimulateOfflineChang
 
   return (
     <header className="topbar" id="top">
-      <a className="brand" href="#top" aria-label="Neuro Kiosk home">
-        <span className="brand-mark"><Activity size={20} strokeWidth={2.2} /></span>
+      <a className="brand" href="#top" aria-label="Neuro Kiosk with NIT Agartala branding">
+        <span className="brand-logos">
+          <img className="brand-logo brand-logo-neuro" src="/neuro-kiosk-logo.png" alt="Neuro Kiosk logo" />
+          <img className="brand-logo brand-logo-institute" src="/nit-agartala-logo.png" alt="NIT Agartala emblem" />
+        </span>
         <span className="brand-wordmark">NEURO<span>KIOSK</span></span>
       </a>
       <div className="topbar-right">

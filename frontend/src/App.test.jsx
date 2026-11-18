@@ -61,15 +61,37 @@ describe("Neuro Kiosk", () => {
     });
   });
 
-  it("requires acknowledgement and keeps the disclaimer visible afterward", () => {
+  it("shows both Neuro Kiosk and NIT Agartala logos in the header", () => {
+    render(<App />);
+
+    expect(screen.getByRole("img", { name: "Neuro Kiosk logo" })).toHaveAttribute(
+      "src",
+      "/neuro-kiosk-logo.png"
+    );
+    expect(screen.getByRole("img", { name: "NIT Agartala emblem" })).toHaveAttribute(
+      "src",
+      "/nit-agartala-logo.png"
+    );
+  });
+
+  it("shows the warning initially and hides it after acknowledgement", () => {
     render(<App />);
 
     expect(screen.getByRole("dialog", { name: "Research demonstration only" })).toBeInTheDocument();
+    expect(screen.getByText(/not a medical device and does not provide a diagnosis/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "I understand" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByText(/Not for clinical use/)).toBeInTheDocument();
+    expect(screen.queryByText(/Not for clinical use/)).not.toBeInTheDocument();
     expect(window.localStorage.getItem("neuro-kiosk-acknowledged")).toBe("true");
+  });
+
+  it("does not show the initial warning again after acknowledgement was saved", () => {
+    window.localStorage.setItem("neuro-kiosk-acknowledged", "true");
+    render(<App />);
+
+    expect(screen.queryByRole("dialog", { name: "Research demonstration only" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Not for clinical use/)).not.toBeInTheDocument();
   });
 
   function switchToUpload() {
